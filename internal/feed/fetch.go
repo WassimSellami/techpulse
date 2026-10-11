@@ -26,7 +26,7 @@ func Fetch(ctx context.Context, url string, source string) ([]model.Article, err
 
 		articles = append(articles, model.Article{
 			Title:       item.Title,
-			Description: item.Description,
+			Description: cleanDescription(item.Description),
 			URL:         item.Link,
 			Source:      source,
 			PublishedAt: item.PublishedParsed.UTC(),

@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
+	"techpulse/internal/brief"
 	"techpulse/internal/feed"
 	"techpulse/internal/model"
 )
@@ -18,14 +20,38 @@ func Brief(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
-	defer cancel()
+	hours := 24
 
-	articles, err := feed.Fetch(ctx, feed.TechCrunchURL, "TechCrunch")
-	if err != nil {
-		log.Printf("Failed to fetch news: %v", err)
-		http.Error(w, "Failed to fetch news", http.StatusBadGateway)
-		return
+	if value := r.URL.Query().Get("hours"); value != "" {
+		parsed, err := strconv.Atoi(value)
+		if err != nil || parsed < 1 || parsed > 48 {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": "hours must be an integer between 1 and 48",
+			})
+			return
+		}
+
+		hours = parsed
+	}
+
+	articles := make([]model.Article, 0)
+
+	for _, source := range feed.Sources {
+		ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+
+		sourceArticles, err := feed.Fetch(ctx, source.URL, source.Name)
+		cancel()
+
+		if err != nil {
+			log.Printf("Failed to fetch %s: %v", source.Name, err)
+			http.Error(w, "Failed to fetch news", http.StatusBadGateway)
+			return
+		}
+
+		articles = append(articles, sourceArticles...)
+		articles = brief.Select(articles, hours, time.Now().UTC())
 	}
 
 	response := struct {
