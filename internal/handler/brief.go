@@ -3,6 +3,9 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
+	"time"
+
+	"techpulse/internal/model"
 )
 
 func Brief(w http.ResponseWriter, r *http.Request) {
@@ -12,9 +15,33 @@ func Brief(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	now := time.Now().UTC()
 
-	json.NewEncoder(w).Encode(map[string]string{
-		"message": "TechPulse is running",
-	})
+	articles := []model.Article{
+		{
+			Title:       "ChatGPT 16 released",
+			Description: "not yet, don't worry.",
+			URL:         "https://example.com/GPT16",
+			Source:      "Mock Tech News",
+			PublishedAt: now.Add(-time.Hour),
+		},
+		{
+			Title:       "Iphone 25 released",
+			Description: "another silly joke.",
+			URL:         "https://example.com/iphone25",
+			Source:      "Mock Tech News",
+			PublishedAt: now.Add(-2 * time.Hour),
+		},
+	}
+
+	response := struct {
+		Count    int             `json:"count"`
+		Articles []model.Article `json:"articles"`
+	}{
+		Count:    len(articles),
+		Articles: articles,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
