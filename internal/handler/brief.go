@@ -1,10 +1,13 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
+	"log"
 	"net/http"
 	"time"
 
+	"techpulse/internal/feed"
 	"techpulse/internal/model"
 )
 
@@ -15,23 +18,14 @@ func Brief(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	now := time.Now().UTC()
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
 
-	articles := []model.Article{
-		{
-			Title:       "ChatGPT 16 released",
-			Description: "not yet, don't worry.",
-			URL:         "https://example.com/GPT16",
-			Source:      "Mock Tech News",
-			PublishedAt: now.Add(-time.Hour),
-		},
-		{
-			Title:       "Iphone 25 released",
-			Description: "another silly joke.",
-			URL:         "https://example.com/iphone25",
-			Source:      "Mock Tech News",
-			PublishedAt: now.Add(-2 * time.Hour),
-		},
+	articles, err := feed.Fetch(ctx, feed.TechCrunchURL, "TechCrunch")
+	if err != nil {
+		log.Printf("Failed to fetch news: %v", err)
+		http.Error(w, "Failed to fetch news", http.StatusBadGateway)
+		return
 	}
 
 	response := struct {
