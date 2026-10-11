@@ -36,6 +36,22 @@ func Brief(w http.ResponseWriter, r *http.Request) {
 		hours = parsed
 	}
 
+	limit := 20
+
+	if value := r.URL.Query().Get("limit"); value != "" {
+		parsed, err := strconv.Atoi(value)
+		if err != nil || parsed < 1 || parsed > 100 {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": "limit must be an integer between 1 and 100",
+			})
+			return
+		}
+
+		limit = parsed
+	}
+
 	articles := make([]model.Article, 0)
 
 	for _, source := range feed.Sources {
@@ -52,6 +68,10 @@ func Brief(w http.ResponseWriter, r *http.Request) {
 
 		articles = append(articles, sourceArticles...)
 		articles = brief.Select(articles, hours, time.Now().UTC())
+	}
+
+	if len(articles) > limit {
+		articles = articles[:limit]
 	}
 
 	response := struct {
