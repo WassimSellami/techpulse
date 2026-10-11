@@ -21,6 +21,19 @@ func Brief(w http.ResponseWriter, r *http.Request) {
 	}
 
 	hours := 24
+	format := r.URL.Query().Get("format")
+	if format == "" {
+		format = "json"
+	}
+
+	if format != "json" && format != "markdown" {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{
+			"error": "format must be json or markdown",
+		})
+		return
+	}
 
 	if value := r.URL.Query().Get("hours"); value != "" {
 		parsed, err := strconv.Atoi(value)
@@ -74,6 +87,12 @@ func Brief(w http.ResponseWriter, r *http.Request) {
 
 	if len(articles) > limit {
 		articles = articles[:limit]
+	}
+
+	if format == "markdown" {
+		w.Header().Set("Content-Type", "text/markdown; charset=utf-8")
+		w.Write([]byte(brief.Markdown(articles, hours)))
+		return
 	}
 
 	response := struct {
