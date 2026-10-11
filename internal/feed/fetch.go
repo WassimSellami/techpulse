@@ -30,6 +30,7 @@ func Fetch(ctx context.Context, url string, source string) ([]model.Article, err
 			URL:         item.Link,
 			Source:      source,
 			PublishedAt: item.PublishedParsed.UTC(),
+			Categories:  item.Categories,
 		})
 	}
 

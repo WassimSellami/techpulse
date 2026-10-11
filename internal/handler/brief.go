@@ -83,6 +83,7 @@ func Brief(w http.ResponseWriter, r *http.Request) {
 		articles = brief.Select(articles, hours, time.Now().UTC())
 	}
 
+	articles = brief.FilterTech(articles)
 	articles = brief.Deduplicate(articles)
 
 	if len(articles) > limit {
