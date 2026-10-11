@@ -70,6 +70,8 @@ func Brief(w http.ResponseWriter, r *http.Request) {
 		articles = brief.Select(articles, hours, time.Now().UTC())
 	}
 
+	articles = brief.Deduplicate(articles)
+
 	if len(articles) > limit {
 		articles = articles[:limit]
 	}
